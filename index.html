@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
-    <title>Programmer Calculation</title>
+    <title>Programmer Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { 
@@ -22,7 +22,7 @@
 
     <div class="flex flex-col justify-end h-32 mt-8 mb-2 border-b border-gray-800 pb-2">
         <div id="history-log" class="text-xs text-gray-500 font-mono overflow-y-auto space-y-1 text-right flex-col flex flex-1"></div>
-        <div id="current-op" class="text-orange-400 text-sm h-5 text-right font-mono mt-2 font-bold tracking-widest"></div>
+        <div id="current-op" class="text-orange-400 text-sm h-5 text-right font-mono mt-2 font-bold tracking-widest break-words overflow-hidden"></div>
     </div>
 
     <div class="flex flex-col justify-end space-y-2 mb-6">
@@ -79,10 +79,9 @@
     <script>
         let activeBase = 10;
         let currentInput = "0"; 
-        let previousValue = null; 
-        let currentOp = null;
+        let expression = []; // Guarda BigInts y operadores
         let waitingForNewInput = false;
-        let history = []; // Array para almacenar {v1, op, v2, res}
+        let history = []; 
 
         const row16 = document.getElementById('row-16');
         const row10 = document.getElementById('row-10');
@@ -105,21 +104,31 @@
         }
 
         function renderContextUI() {
-            // Actualiza la operación en curso según la base actual
-            if (previousValue !== null && currentOp !== null) {
-                currentOpDisplay.innerText = `${formatBigInt(previousValue, activeBase)} ${currentOp}`;
-            } else {
-                currentOpDisplay.innerText = "";
+            // Reconstruye la ecuación en curso usando la base activa
+            let exprStr = expression.map(item => {
+                if (typeof item === 'bigint') return formatBigInt(item, activeBase);
+                return item;
+            }).join(' ');
+
+            // Mostrar el valor que se está escribiendo actualmente
+            if (!waitingForNewInput && currentInput !== "0" && currentInput !== "" && currentInput !== "-") {
+                let currentVal = parseCurrentInput();
+                if (currentVal !== null) {
+                    exprStr += (exprStr ? " " : "") + formatBigInt(currentVal, activeBase);
+                }
             }
 
-            // Actualiza el historial según la base actual
+            currentOpDisplay.innerText = exprStr;
+
+            // Reconstruye el historial con la base activa
             historyLogDisplay.innerHTML = "";
             history.forEach(entry => {
+                let histStr = entry.expr.map(item => typeof item === 'bigint' ? formatBigInt(item, activeBase) : item).join(' ');
+                histStr += " = " + formatBigInt(entry.res, activeBase);
                 let div = document.createElement('div');
-                div.innerText = `${formatBigInt(entry.v1, activeBase)} ${entry.op} ${formatBigInt(entry.v2, activeBase)} = ${formatBigInt(entry.res, activeBase)}`;
+                div.innerText = histStr;
                 historyLogDisplay.appendChild(div);
             });
-            // Auto-scroll al final del historial
             historyLogDisplay.scrollTop = historyLogDisplay.scrollHeight;
         }
 
@@ -165,7 +174,7 @@
         function parseCurrentInput() {
             if (!currentInput || currentInput === "Error") return 0n;
             try {
-                let cleanInput = currentInput.replace(/\s/g, ''); // Quitar espacios del binario
+                let cleanInput = currentInput.replace(/\s/g, ''); 
                 let isNeg = cleanInput.startsWith('-');
                 if (isNeg) cleanInput = cleanInput.substring(1);
 
@@ -210,6 +219,7 @@
                 else currentInput += char;
             }
             updateDisplays(parseCurrentInput());
+            renderContextUI();
         }
 
         function deleteLast() {
@@ -217,12 +227,12 @@
             currentInput = currentInput.slice(0, -1);
             if (currentInput === "" || currentInput === "-") currentInput = "0";
             updateDisplays(parseCurrentInput());
+            renderContextUI();
         }
 
         function clearAll() {
             currentInput = "0";
-            previousValue = null;
-            currentOp = null;
+            expression = [];
             waitingForNewInput = false;
             updateDisplays(0n);
             renderContextUI();
@@ -232,56 +242,59 @@
             let currentVal = parseCurrentInput();
             if (currentVal === null) return;
 
-            if (previousValue !== null && !waitingForNewInput) {
-                calculate();
-                previousValue = parseCurrentInput();
-            } else {
-                previousValue = currentVal;
+            if (!waitingForNewInput) {
+                expression.push(currentVal);
+            } else if (expression.length > 0 && typeof expression[expression.length - 1] === 'string') {
+                // Si pulsa otro operador seguido, lo sobreescribe
+                expression.pop();
             }
             
-            currentOp = op;
+            expression.push(op);
             waitingForNewInput = true;
             renderContextUI();
         }
 
         function calculate() {
-            if (currentOp === null || previousValue === null) return;
+            if (expression.length === 0) return;
             
             let currentVal = parseCurrentInput();
-            if (currentVal === null) return;
+            if (currentVal !== null && !waitingForNewInput) {
+                expression.push(currentVal);
+            }
 
-            let result = 0n;
+            // Elimina operador final si se pulsa igual por accidente
+            if (typeof expression[expression.length - 1] === 'string') {
+                expression.pop();
+            }
+
             try {
-                switch(currentOp) {
-                    case '+': result = previousValue + currentVal; break;
-                    case '-': result = previousValue - currentVal; break;
-                    case '*': result = previousValue * currentVal; break;
-                    case '/': result = previousValue / currentVal; break; 
-                    case '&': result = previousValue & currentVal; break;
-                    case '|': result = previousValue | currentVal; break;
-                    case '^': result = previousValue ^ currentVal; break;
-                    case '<<': result = previousValue << currentVal; break;
-                    case '>>': result = previousValue >> currentVal; break;
-                }
+                // Genera la cadena para el eval() forzando BigInt con el sufijo "n"
+                let evalStr = expression.map(item => {
+                    if (typeof item === 'bigint') {
+                        return item < 0n ? `(${item.toString()}n)` : `${item.toString()}n`; 
+                    }
+                    return item;
+                }).join(' ');
+
+                let result = eval(evalStr);
                 
-                // Guardar en historial
-                history.push({ v1: previousValue, op: currentOp, v2: currentVal, res: result });
-                if (history.length > 10) history.shift(); // Mantener solo las últimas 10
+                // Guarda en el historial el array puro de la expresión para poder repintarlo luego en cualquier base
+                history.push({ expr: [...expression], res: result });
+                if (history.length > 10) history.shift();
 
                 let isNeg = result < 0n;
                 let absVal = isNeg ? -result : result;
                 currentInput = absVal.toString(activeBase).toUpperCase();
                 if (isNeg) currentInput = "-" + currentInput;
 
+                expression = []; // Resetea la ecuación actual
                 updateDisplays(result);
-                previousValue = null;
-                currentOp = null;
                 waitingForNewInput = true;
                 
                 renderContextUI();
             } catch (e) {
                 clearAll();
-                val10.innerText = "Error Div/0";
+                val10.innerText = "Error Expresión";
             }
         }
     </script>
