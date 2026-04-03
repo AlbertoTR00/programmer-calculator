@@ -2,84 +2,124 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CalcProg">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
-    <title>Programmer Calculator</title>
+    
+    <title>Calc Prog Jarvis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Desactivar selección de texto e interacciones web */
         body { 
             -webkit-user-select: none; 
             user-select: none; 
-            -webkit-tap-highlight-color: transparent; 
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            overflow: hidden; /* Evitar scroll elástico de la página entera */
+            /* Usar el negro puro de iOS en modo oscuro */
+            background-color: #000000;
         }
+
+        /* Variables de Safe Area de Apple para CSS puro */
+        :root {
+            --sab: env(safe-area-inset-bottom);
+            --sat: env(safe-area-inset-top);
+        }
+
+        /* Contenedor principal respetando Safe Areas */
+        .ios-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            /* El padding top debe ser al menos el safe area del notch */
+            padding-top: calc(var(--sat) + 10px);
+            /* El padding bottom debe ser el safe area del home indicator */
+            padding-bottom: var(--sab);
+            box-sizing: border-box;
+        }
+
+        /* Ocultar barra de scroll para el binario largo */
         ::-webkit-scrollbar { display: none; }
+
+        /* Estilo nativo para botones iOS activados */
+        button:active {
+            opacity: 0.6;
+            transform: scale(0.97);
+            transition: transform 0.1s ease;
+        }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 font-sans h-screen flex flex-col p-4 box-border overflow-hidden">
+<body class="bg-black text-gray-100 font-sans">
 
-    <div class="flex flex-col justify-end h-32 mt-8 mb-2 border-b border-gray-800 pb-2">
-        <div id="history-log" class="text-xs text-gray-500 font-mono overflow-y-auto space-y-1 text-right flex-col flex flex-1"></div>
-        <div id="current-op" class="text-orange-400 text-sm h-5 text-right font-mono mt-2 font-bold tracking-widest break-words overflow-hidden"></div>
-    </div>
-
-    <div class="flex flex-col justify-end space-y-2 mb-6">
-        <div id="row-16" class="flex items-center cursor-pointer p-2 rounded-lg transition-colors border border-transparent" onclick="setBase(16)">
-            <div class="text-sm font-bold text-gray-500 w-12">HEX</div>
-            <div id="val-16" class="text-2xl font-mono text-right flex-1 break-all text-gray-300">0</div>
+    <div class="ios-container px-5">
+        
+        <div class="bg-gray-900 rounded-3xl p-4 mb-4 shadow-xl border border-gray-800">
+            <div id="history-log" class="text-xs text-gray-600 font-mono h-24 overflow-y-auto space-y-1 text-right flex-col-reverse flex">
+                </div>
+            <div id="current-op" class="text-orange-400 text-base h-7 text-right font-mono mt-3 font-medium tracking-tight break-words overflow-hidden"></div>
         </div>
-        <div id="row-10" class="flex items-center cursor-pointer p-2 rounded-lg transition-colors border border-transparent" onclick="setBase(10)">
-            <div class="text-sm font-bold text-gray-500 w-12">DEC</div>
-            <div id="val-10" class="text-2xl font-mono text-right flex-1 break-all text-gray-300">0</div>
+
+        <div class="flex flex-col justify-end space-y-3 mb-6 flex-1 px-1">
+            <div id="row-16" class="flex items-center cursor-pointer p-3 rounded-2xl transition-colors border border-transparent" onclick="setBase(16)">
+                <div class="text-xs font-bold text-gray-600 w-14">HEX</div>
+                <div id="val-16" class="text-3xl font-mono text-right flex-1 break-all text-gray-400">0</div>
+            </div>
+            <div id="row-10" class="flex items-center cursor-pointer p-3 rounded-2xl transition-colors border border-transparent" onclick="setBase(10)">
+                <div class="text-xs font-bold text-gray-600 w-14">DEC</div>
+                <div id="val-10" class="text-3xl font-mono text-right flex-1 break-all text-gray-400">0</div>
+            </div>
+            <div id="row-2" class="flex items-center cursor-pointer p-3 rounded-2xl transition-colors border border-transparent" onclick="setBase(2)">
+                <div class="text-xs font-bold text-gray-600 w-14">BIN</div>
+                <div id="val-2" class="text-xl font-mono text-right flex-1 break-words text-gray-400 tracking-wider max-h-24 overflow-y-auto leading-relaxed">0000</div>
+            </div>
         </div>
-        <div id="row-2" class="flex items-center cursor-pointer p-2 rounded-lg transition-colors border border-transparent" onclick="setBase(2)">
-            <div class="text-sm font-bold text-gray-500 w-12">BIN</div>
-            <div id="val-2" class="text-lg font-mono text-right flex-1 break-words text-gray-300 tracking-widest max-h-20 overflow-y-auto leading-relaxed">0000</div>
+
+        <div class="grid grid-cols-5 gap-3 pb-6">
+            <button class="btn-op bg-gray-900 text-orange-400 font-bold py-3 rounded-2xl text-xl" onclick="setOp('<<')">&lt;&lt;</button>
+            <button class="btn-op bg-gray-900 text-orange-400 font-bold py-3 rounded-2xl text-xl" onclick="setOp('>>')">&gt;&gt;</button>
+            <button class="btn-op bg-gray-900 text-orange-400 font-semibold py-3 rounded-2xl text-sm" onclick="setOp('&')">AND</button>
+            <button class="btn-op bg-gray-900 text-orange-400 font-semibold py-3 rounded-2xl text-sm" onclick="setOp('|')">OR</button>
+            <button class="btn-op bg-gray-900 text-orange-400 font-semibold py-3 rounded-2xl text-sm" onclick="setOp('^')">XOR</button>
+
+            <button class="btn-hex bg-gray-900 text-white py-4 rounded-2xl font-mono text-xl" onclick="inputChar('A')">A</button>
+            <button class="bg-gray-700 text-red-400 font-bold py-4 rounded-2xl font-mono text-sm" onclick="clearAll()">AC</button>
+            <button class="bg-gray-700 text-red-400 font-bold py-4 rounded-2xl font-mono text-sm" onclick="deleteLast()">DEL</button>
+            <button class="btn-op bg-gray-900 text-orange-400 text-3xl rounded-2xl" onclick="setOp('/')">÷</button>
+            <button class="btn-op bg-gray-900 text-orange-400 text-3xl rounded-2xl" onclick="setOp('*')">×</button>
+
+            <button class="btn-hex bg-gray-900 text-white py-4 rounded-2xl font-mono text-xl" onclick="inputChar('B')">B</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('7')">7</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('8')">8</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('9')">9</button>
+            <button class="btn-op bg-gray-900 text-orange-400 text-4xl rounded-2xl" onclick="setOp('-')">−</button>
+
+            <button class="btn-hex bg-gray-900 text-white py-4 rounded-2xl font-mono text-xl" onclick="inputChar('C')">C</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('4')">4</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('5')">5</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('6')">6</button>
+            <button class="btn-op bg-gray-900 text-orange-400 text-3xl rounded-2xl" onclick="setOp('+')">+</button>
+
+            <button class="btn-hex bg-gray-900 text-white py-4 rounded-2xl font-mono text-xl" onclick="inputChar('D')">D</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('1')">1</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('2')">2</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl" onclick="inputChar('3')">3</button>
+            <button class="bg-orange-500 text-white text-4xl rounded-3xl row-span-2 shadow-lg" onclick="calculate()">=</button>
+
+            <button class="btn-hex bg-gray-900 text-white py-4 rounded-2xl font-mono text-xl" onclick="inputChar('E')">E</button>
+            <button class="btn-hex bg-gray-900 text-white py-4 rounded-2xl font-mono text-xl" onclick="inputChar('F')">F</button>
+            <button class="btn-num bg-gray-800 text-white py-5 rounded-full text-3xl col-span-2" onclick="inputChar('0')">0</button>
         </div>
-    </div>
 
-    <div class="grid grid-cols-5 gap-2 pb-4 flex-1">
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('<<')">&lt;&lt;</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('>>')">&gt;&gt;</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('&')">AND</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('|')">OR</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('^')">XOR</button>
-
-        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('A')">A</button>
-        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-sm text-red-400 font-bold" onclick="clearAll()">AC</button>
-        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-sm text-red-400 font-bold" onclick="deleteLast()">DEL</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-xl rounded-lg" onclick="setOp('/')">÷</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-xl rounded-lg" onclick="setOp('*')">×</button>
-
-        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('B')">B</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('7')">7</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('8')">8</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('9')">9</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-2xl rounded-lg" onclick="setOp('-')">-</button>
-
-        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('C')">C</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('4')">4</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('5')">5</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('6')">6</button>
-        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-2xl rounded-lg" onclick="setOp('+')">+</button>
-
-        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('D')">D</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('1')">1</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('2')">2</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('3')">3</button>
-        <button class="bg-orange-500 hover:bg-orange-400 text-white text-2xl rounded-lg row-span-2 shadow-lg" onclick="calculate()">=</button>
-
-        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('E')">E</button>
-        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('F')">F</button>
-        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl col-span-2" onclick="inputChar('0')">0</button>
     </div>
 
     <script>
         let activeBase = 10;
         let currentInput = "0"; 
-        let expression = []; // Guarda BigInts y operadores
+        let expression = []; 
         let waitingForNewInput = false;
         let history = []; 
 
@@ -104,13 +144,15 @@
         }
 
         function renderContextUI() {
-            // Reconstruye la ecuación en curso usando la base activa
             let exprStr = expression.map(item => {
                 if (typeof item === 'bigint') return formatBigInt(item, activeBase);
+                // Mapeo visual de operadores
+                if (item === '*') return '×';
+                if (item === '/') return '÷';
+                if (item === '-') return '−';
                 return item;
             }).join(' ');
 
-            // Mostrar el valor que se está escribiendo actualmente
             if (!waitingForNewInput && currentInput !== "0" && currentInput !== "" && currentInput !== "-") {
                 let currentVal = parseCurrentInput();
                 if (currentVal !== null) {
@@ -120,41 +162,47 @@
 
             currentOpDisplay.innerText = exprStr;
 
-            // Reconstruye el historial con la base activa
             historyLogDisplay.innerHTML = "";
+            // Usamos flex-col-reverse, así que iteramos normal pero se verán al revés (más nuevo abajo)
             history.forEach(entry => {
-                let histStr = entry.expr.map(item => typeof item === 'bigint' ? formatBigInt(item, activeBase) : item).join(' ');
+                let histStr = entry.expr.map(item => {
+                    if (typeof item === 'bigint') return formatBigInt(item, activeBase);
+                    if (item === '*') return '×';
+                    if (item === '/') return '÷';
+                    if (item === '-') return '−';
+                    return item;
+                }).join(' ');
                 histStr += " = " + formatBigInt(entry.res, activeBase);
                 let div = document.createElement('div');
                 div.innerText = histStr;
                 historyLogDisplay.appendChild(div);
             });
-            historyLogDisplay.scrollTop = historyLogDisplay.scrollHeight;
         }
 
         function setBase(base) {
             activeBase = base;
             
+            // Colores nativos de iOS (fondo gris oscuro para selección)
             [row16, row10, row2].forEach(row => {
-                row.classList.remove('bg-gray-800', 'border-gray-600');
+                row.classList.remove('bg-gray-800', 'border-gray-700');
                 row.querySelector('div:nth-child(2)')?.classList.replace('text-white', 'text-gray-400');
             });
 
             let activeRow = base === 16 ? row16 : (base === 10 ? row10 : row2);
-            activeRow.classList.add('bg-gray-800', 'border-gray-600');
+            activeRow.classList.add('bg-gray-800', 'border-gray-700');
             activeRow.querySelector('div:nth-child(2)')?.classList.replace('text-gray-400', 'text-white');
 
             const hexBtns = document.querySelectorAll('.btn-hex');
             const numBtns = document.querySelectorAll('.btn-num');
 
             hexBtns.forEach(btn => btn.disabled = base !== 16);
-            hexBtns.forEach(btn => btn.style.opacity = base !== 16 ? '0.3' : '1');
+            hexBtns.forEach(btn => btn.style.opacity = base !== 16 ? '0.2' : '1');
 
             numBtns.forEach(btn => {
                 const isBinBtn = btn.innerText === '0' || btn.innerText === '1';
                 if (base === 2 && !isBinBtn) {
                     btn.disabled = true;
-                    btn.style.opacity = '0.3';
+                    btn.style.opacity = '0.2';
                 } else {
                     btn.disabled = false;
                     btn.style.opacity = '1';
@@ -245,7 +293,6 @@
             if (!waitingForNewInput) {
                 expression.push(currentVal);
             } else if (expression.length > 0 && typeof expression[expression.length - 1] === 'string') {
-                // Si pulsa otro operador seguido, lo sobreescribe
                 expression.pop();
             }
             
@@ -262,13 +309,11 @@
                 expression.push(currentVal);
             }
 
-            // Elimina operador final si se pulsa igual por accidente
             if (typeof expression[expression.length - 1] === 'string') {
                 expression.pop();
             }
 
             try {
-                // Genera la cadena para el eval() forzando BigInt con el sufijo "n"
                 let evalStr = expression.map(item => {
                     if (typeof item === 'bigint') {
                         return item < 0n ? `(${item.toString()}n)` : `${item.toString()}n`; 
@@ -278,16 +323,15 @@
 
                 let result = eval(evalStr);
                 
-                // Guarda en el historial el array puro de la expresión para poder repintarlo luego en cualquier base
                 history.push({ expr: [...expression], res: result });
-                if (history.length > 10) history.shift();
+                if (history.length > 20) history.shift(); // Aumentado historial
 
                 let isNeg = result < 0n;
                 let absVal = isNeg ? -result : result;
                 currentInput = absVal.toString(activeBase).toUpperCase();
                 if (isNeg) currentInput = "-" + currentInput;
 
-                expression = []; // Resetea la ecuación actual
+                expression = []; 
                 updateDisplays(result);
                 waitingForNewInput = true;
                 
