@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    <title>Calc Prog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            -webkit-user-select: none; 
+            user-select: none; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans h-screen flex flex-col p-4 box-border overflow-hidden">
+
+    <div class="flex flex-col justify-end h-32 mt-8 mb-2 border-b border-gray-800 pb-2">
+        <div id="history-log" class="text-xs text-gray-500 font-mono overflow-y-auto space-y-1 text-right flex-col flex flex-1"></div>
+        <div id="current-op" class="text-orange-400 text-sm h-5 text-right font-mono mt-2 font-bold tracking-widest"></div>
+    </div>
+
+    <div class="flex flex-col justify-end space-y-2 mb-6">
+        <div id="row-16" class="flex items-center cursor-pointer p-2 rounded-lg transition-colors border border-transparent" onclick="setBase(16)">
+            <div class="text-sm font-bold text-gray-500 w-12">HEX</div>
+            <div id="val-16" class="text-2xl font-mono text-right flex-1 break-all text-gray-300">0</div>
+        </div>
+        <div id="row-10" class="flex items-center cursor-pointer p-2 rounded-lg transition-colors border border-transparent" onclick="setBase(10)">
+            <div class="text-sm font-bold text-gray-500 w-12">DEC</div>
+            <div id="val-10" class="text-2xl font-mono text-right flex-1 break-all text-gray-300">0</div>
+        </div>
+        <div id="row-2" class="flex items-center cursor-pointer p-2 rounded-lg transition-colors border border-transparent" onclick="setBase(2)">
+            <div class="text-sm font-bold text-gray-500 w-12">BIN</div>
+            <div id="val-2" class="text-lg font-mono text-right flex-1 break-words text-gray-300 tracking-widest max-h-20 overflow-y-auto leading-relaxed">0000</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-5 gap-2 pb-4 flex-1">
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('<<')">&lt;&lt;</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('>>')">&gt;&gt;</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('&')">AND</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('|')">OR</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 font-bold py-2 rounded-lg" onclick="setOp('^')">XOR</button>
+
+        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('A')">A</button>
+        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-sm text-red-400 font-bold" onclick="clearAll()">AC</button>
+        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-sm text-red-400 font-bold" onclick="deleteLast()">DEL</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-xl rounded-lg" onclick="setOp('/')">÷</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-xl rounded-lg" onclick="setOp('*')">×</button>
+
+        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('B')">B</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('7')">7</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('8')">8</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('9')">9</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-2xl rounded-lg" onclick="setOp('-')">-</button>
+
+        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('C')">C</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('4')">4</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('5')">5</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('6')">6</button>
+        <button class="btn-op bg-gray-800 hover:bg-gray-700 text-orange-400 text-2xl rounded-lg" onclick="setOp('+')">+</button>
+
+        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('D')">D</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('1')">1</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('2')">2</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl" onclick="inputChar('3')">3</button>
+        <button class="bg-orange-500 hover:bg-orange-400 text-white text-2xl rounded-lg row-span-2 shadow-lg" onclick="calculate()">=</button>
+
+        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('E')">E</button>
+        <button class="btn-hex bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-mono text-lg" onclick="inputChar('F')">F</button>
+        <button class="btn-num bg-gray-700 hover:bg-gray-600 py-3 rounded-lg text-2xl col-span-2" onclick="inputChar('0')">0</button>
+    </div>
+
+    <script>
+        let activeBase = 10;
+        let currentInput = "0"; 
+        let previousValue = null; 
+        let currentOp = null;
+        let waitingForNewInput = false;
+        let history = []; // Array para almacenar {v1, op, v2, res}
+
+        const row16 = document.getElementById('row-16');
+        const row10 = document.getElementById('row-10');
+        const row2 = document.getElementById('row-2');
+        const val16 = document.getElementById('val-16');
+        const val10 = document.getElementById('val-10');
+        const val2 = document.getElementById('val-2');
+        const currentOpDisplay = document.getElementById('current-op');
+        const historyLogDisplay = document.getElementById('history-log');
+
+        setBase(10);
+
+        function formatBigInt(val, base) {
+            if (val === null) return "";
+            let isNeg = val < 0n;
+            let absVal = isNeg ? -val : val;
+            let str = absVal.toString(base).toUpperCase();
+            if (base === 2) str = formatBinary(str);
+            return (isNeg ? "-" : "") + str;
+        }
+
+        function renderContextUI() {
+            // Actualiza la operación en curso según la base actual
+            if (previousValue !== null && currentOp !== null) {
+                currentOpDisplay.innerText = `${formatBigInt(previousValue, activeBase)} ${currentOp}`;
+            } else {
+                currentOpDisplay.innerText = "";
+            }
+
+            // Actualiza el historial según la base actual
+            historyLogDisplay.innerHTML = "";
+            history.forEach(entry => {
+                let div = document.createElement('div');
+                div.innerText = `${formatBigInt(entry.v1, activeBase)} ${entry.op} ${formatBigInt(entry.v2, activeBase)} = ${formatBigInt(entry.res, activeBase)}`;
+                historyLogDisplay.appendChild(div);
+            });
+            // Auto-scroll al final del historial
+            historyLogDisplay.scrollTop = historyLogDisplay.scrollHeight;
+        }
+
+        function setBase(base) {
+            activeBase = base;
+            
+            [row16, row10, row2].forEach(row => {
+                row.classList.remove('bg-gray-800', 'border-gray-600');
+                row.querySelector('div:nth-child(2)')?.classList.replace('text-white', 'text-gray-400');
+            });
+
+            let activeRow = base === 16 ? row16 : (base === 10 ? row10 : row2);
+            activeRow.classList.add('bg-gray-800', 'border-gray-600');
+            activeRow.querySelector('div:nth-child(2)')?.classList.replace('text-gray-400', 'text-white');
+
+            const hexBtns = document.querySelectorAll('.btn-hex');
+            const numBtns = document.querySelectorAll('.btn-num');
+
+            hexBtns.forEach(btn => btn.disabled = base !== 16);
+            hexBtns.forEach(btn => btn.style.opacity = base !== 16 ? '0.3' : '1');
+
+            numBtns.forEach(btn => {
+                const isBinBtn = btn.innerText === '0' || btn.innerText === '1';
+                if (base === 2 && !isBinBtn) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.3';
+                } else {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            });
+
+            let currentBigInt = parseCurrentInput();
+            if(currentBigInt !== null) {
+                currentInput = formatBigInt(currentBigInt, base).replace(/\s/g, ''); 
+            } else {
+                currentInput = "0";
+            }
+            
+            renderContextUI();
+        }
+
+        function parseCurrentInput() {
+            if (!currentInput || currentInput === "Error") return 0n;
+            try {
+                let cleanInput = currentInput.replace(/\s/g, ''); // Quitar espacios del binario
+                let isNeg = cleanInput.startsWith('-');
+                if (isNeg) cleanInput = cleanInput.substring(1);
+
+                let val;
+                if (activeBase === 16) val = BigInt("0x" + cleanInput);
+                else if (activeBase === 2) val = BigInt("0b" + cleanInput);
+                else val = BigInt(cleanInput);
+
+                return isNeg ? -val : val;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function formatBinary(binStr) {
+            let padded = binStr.padStart(Math.ceil(binStr.length / 4) * 4, '0');
+            return padded.match(/.{1,4}/g)?.join(' ') || '0000';
+        }
+
+        function updateDisplays(bigIntValue) {
+            if (bigIntValue === null) {
+                val16.innerText = "Error";
+                val10.innerText = "Error";
+                val2.innerText = "Error";
+                return;
+            }
+
+            let isNeg = bigIntValue < 0n;
+            let absVal = isNeg ? -bigIntValue : bigIntValue;
+
+            val10.innerText = bigIntValue.toString(10);
+            val16.innerText = (isNeg ? "-" : "") + absVal.toString(16).toUpperCase();
+            val2.innerText = (isNeg ? "-" : "") + formatBinary(absVal.toString(2));
+        }
+
+        function inputChar(char) {
+            if (waitingForNewInput) {
+                currentInput = char;
+                waitingForNewInput = false;
+            } else {
+                if (currentInput === "0") currentInput = char;
+                else currentInput += char;
+            }
+            updateDisplays(parseCurrentInput());
+        }
+
+        function deleteLast() {
+            if (waitingForNewInput) return;
+            currentInput = currentInput.slice(0, -1);
+            if (currentInput === "" || currentInput === "-") currentInput = "0";
+            updateDisplays(parseCurrentInput());
+        }
+
+        function clearAll() {
+            currentInput = "0";
+            previousValue = null;
+            currentOp = null;
+            waitingForNewInput = false;
+            updateDisplays(0n);
+            renderContextUI();
+        }
+
+        function setOp(op) {
+            let currentVal = parseCurrentInput();
+            if (currentVal === null) return;
+
+            if (previousValue !== null && !waitingForNewInput) {
+                calculate();
+                previousValue = parseCurrentInput();
+            } else {
+                previousValue = currentVal;
+            }
+            
+            currentOp = op;
+            waitingForNewInput = true;
+            renderContextUI();
+        }
+
+        function calculate() {
+            if (currentOp === null || previousValue === null) return;
+            
+            let currentVal = parseCurrentInput();
+            if (currentVal === null) return;
+
+            let result = 0n;
+            try {
+                switch(currentOp) {
+                    case '+': result = previousValue + currentVal; break;
+                    case '-': result = previousValue - currentVal; break;
+                    case '*': result = previousValue * currentVal; break;
+                    case '/': result = previousValue / currentVal; break; 
+                    case '&': result = previousValue & currentVal; break;
+                    case '|': result = previousValue | currentVal; break;
+                    case '^': result = previousValue ^ currentVal; break;
+                    case '<<': result = previousValue << currentVal; break;
+                    case '>>': result = previousValue >> currentVal; break;
+                }
+                
+                // Guardar en historial
+                history.push({ v1: previousValue, op: currentOp, v2: currentVal, res: result });
+                if (history.length > 10) history.shift(); // Mantener solo las últimas 10
+
+                let isNeg = result < 0n;
+                let absVal = isNeg ? -result : result;
+                currentInput = absVal.toString(activeBase).toUpperCase();
+                if (isNeg) currentInput = "-" + currentInput;
+
+                updateDisplays(result);
+                previousValue = null;
+                currentOp = null;
+                waitingForNewInput = true;
+                
+                renderContextUI();
+            } catch (e) {
+                clearAll();
+                val10.innerText = "Error Div/0";
+            }
+        }
+    </script>
+</body>
+</html>
